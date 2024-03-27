@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # Adapted from code by Loïc Nassif and Paul Kry
 
 parse = argparse.ArgumentParser()
-parse.add_argument("--infile", type=str, default="../scenes/Plane.json", help="Name of json file that will define the scene")
+parse.add_argument("--infile", type=str, default="../scenes/Sphere.json", help="Name of json file that will define the scene")
 parse.add_argument("--outfile", type=str, default="out.png", help="Name of png that will contain the render")
 args = parse.parse_args()
 
@@ -18,5 +18,5 @@ if __name__ == "__main__":
     image = numpy.rot90(image, k=1, axes=(0, 1))
     plt.axis("off")
     plt.imshow(image)
-    plt.show()
     plt.savefig(args.outfile, bbox_inches='tight')
+    plt.show()

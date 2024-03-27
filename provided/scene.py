@@ -58,14 +58,32 @@ class Scene:
         u = glm.normalize(u)
         v = glm.cross(w, u)
 
+        #print("num rays: " + str(self.samples))
+        #print("num lights: " + str(len(self.lights)))
+        #print("num objects: " + str(len(self.objects)))
+        
+        #ray = hc.Ray(glm.vec3(self.position), w)
+        
         for i in range(self.width):
             for j in range(self.height):
                 colour = glm.vec3(0, 0, 0)
 
                 # TODO: Generate rays
+                # perspective
+                x = left + (right - left) * (i + 0.5) / self.width
+                y = bottom + (top - bottom) * (j + 0.5) / self.height
+                ray_dir = -w + x * u + y * v
+                #s = self.position + i*u + j*v - w
+                #d = s - self.position
+                ray = hc.Ray(glm.vec3(self.position), ray_dir)
+                #print("Distance: " + str(ray.getDistance(s)))
+                #print("Point: " + str(ray.getPoint(2)))
 
                 # TODO: Test for intersection
-
+                for obj in self.objects:
+                    intersection = obj.intersect(ray, hc.Intersection.default())
+                    # deal w/ intersection
+                    colour = intersection.mat.diffuse
                 # TODO: Perform shading computations on the intersection point
 
                 image[i, j, 0] = max(0.0, min(1.0, colour.x))
