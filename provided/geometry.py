@@ -45,6 +45,7 @@ class Sphere(Geometry):
             intersect.time = t
             intersect.position = ray.getPoint(t)
             intersect.mat = self.materials[0]
+            # GET THE NORMAL
         #print("yes solution")
         return intersect
 

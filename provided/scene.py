@@ -83,7 +83,10 @@ class Scene:
                 for obj in self.objects:
                     intersection = obj.intersect(ray, hc.Intersection.default())
                     # deal w/ intersection
-                    colour = intersection.mat.diffuse
+                    # GET THE SHADING, USE intersection.mat:
+                    # has diffuse and specular lighting components
+                    # and has the shininess --> called hardness
+                    colour = intersection.position
                 # TODO: Perform shading computations on the intersection point
 
                 image[i, j, 0] = max(0.0, min(1.0, colour.x))
