@@ -63,7 +63,9 @@ class Scene:
         #print("num objects: " + str(len(self.objects)))
         
         #ray = hc.Ray(glm.vec3(self.position), w)
-        
+        max_i = 0
+        max_j = 0
+        max_z = 0
         for i in range(self.width):
             for j in range(self.height):
                 colour = glm.vec3(0, 0, 0)
@@ -72,12 +74,8 @@ class Scene:
                 # perspective
                 x = left + (right - left) * (i + 0.5) / self.width
                 y = bottom + (top - bottom) * (j + 0.5) / self.height
-                ray_dir = -w + x * u + y * v
-                #s = self.position + i*u + j*v - w
-                #d = s - self.position
-                ray = hc.Ray(glm.vec3(self.position), ray_dir)
-                #print("Distance: " + str(ray.getDistance(s)))
-                #print("Point: " + str(ray.getPoint(2)))
+                ray_dir = -w*d + x * u + y * v
+                ray = hc.Ray(self.position, ray_dir)
 
                 # TODO: Test for intersection
                 for obj in self.objects:
@@ -86,11 +84,19 @@ class Scene:
                     # GET THE SHADING, USE intersection.mat:
                     # has diffuse and specular lighting components
                     # and has the shininess --> called hardness
-                    colour = intersection.position
+                    colour = glm.vec3(0, 0, 0)
+                    if (intersection.hit):
+                        La = self.ambient
+                        Ld = glm.vec3(0, 0, 0)
+                        Ls = glm.vec3(0, 0, 0)
+                        for light in self.lights:
+                            Ld += 0.13 * intersection.mat.diffuse * max(0, glm.dot(intersection.normal, light.vector))
+                            h = (cam_dir + light.vector)/np.linalg.norm(cam_dir + light.vector)
+                            Ls += light.power * intersection.mat.specular * max(0, glm.dot(intersection.normal, h)) ** intersection.mat.hardness
+                        colour = La + Ld + Ls
                 # TODO: Perform shading computations on the intersection point
 
                 image[i, j, 0] = max(0.0, min(1.0, colour.x))
                 image[i, j, 1] = max(0.0, min(1.0, colour.y))
                 image[i, j, 2] = max(0.0, min(1.0, colour.z))
-
         return image

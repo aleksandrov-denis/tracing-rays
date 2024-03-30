@@ -2,6 +2,7 @@ import math
 import helperclasses as hc
 import glm
 import igl
+import numpy as np
 
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
@@ -26,27 +27,25 @@ class Sphere(Geometry):
         self.radius = radius
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        # TODO: Create intersect code for Sphere
-        oc = ray.origin - self.center
-        a = glm.dot(ray.direction, ray.direction)
-        b = 2.0 * glm.dot(ray.direction, oc)
-        c = glm.dot(oc, oc) - self.radius**2
-        discriminant = b**2 - 4.0 * a * c
-        if discriminant < 0:
-            #print("no solution")
-            return intersect
-        t1 = (-b + discriminant**0.5)/(2.0 * a)
-        t2 = (-b - discriminant**0.5)/(2.0 * a)
-        t = max(t1, t2)
-        #point = ray.getPoint(intersect.time)
-        #on_sphere = glm.dot(point, point) - self.radius**2
-        if t >= 0:
-            #print("on sphere")
+        d = ray.direction/np.linalg.norm(ray.direction)
+        o = ray.origin
+        t = glm.dot(self.center - o, d)
+        p = ray.getPoint(t)
+        y = glm.length(self.center - p)
+        if (y < self.radius):
+            #print("HERE")
+            x = math.sqrt(self.radius**2 - y**2)
+            t1 = t - x
+            t2 = t + x
+            if (ray.getDistance(ray.getPoint(t1)) < ray.getDistance(ray.getPoint(t2))):
+                t = t1
+            else:
+                t = t2
             intersect.time = t
             intersect.position = ray.getPoint(t)
+            intersect.normal = (intersect.position - self.center)/np.linalg.norm(intersect.position - self.center)
             intersect.mat = self.materials[0]
-            # GET THE NORMAL
-        #print("yes solution")
+            intersect.hit = True
         return intersect
 
 
@@ -57,8 +56,32 @@ class Plane(Geometry):
         self.normal = normal
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        pass
         # TODO: Create intersect code for Plane
+        epsilon = 0.01
+        p = ray.origin
+        d = ray.direction
+        n = self.normal/np.linalg.norm(self.normal)
+        a = self.point
+        # checks for near-parallelism
+        #if (abs(glm.dot(d, n)) < epsilon):
+            #return intersect
+        t = abs(glm.dot(a - p, n)/glm.dot(d, n))
+        x = ray.getPoint(t)
+        on_plane = glm.dot(x - a, n)
+        # checks if on plane with epsilon margin of error
+        if (abs(on_plane) <= epsilon):
+            intersect.time = t
+            intersect.position = x
+            intersect.normal = n
+            # deal with material
+            x = math.ceil(intersect.position.x)
+            z = math.ceil(intersect.position.z)
+            if (x + z) % 2 == 0:
+                intersect.mat = self.materials[0]
+            else:
+                intersect.mat = self.materials[1]
+            intersect.hit = True
+        return intersect
 
 
 class AABB(Geometry):

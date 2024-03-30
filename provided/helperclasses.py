@@ -48,6 +48,7 @@ class Intersection:
         self.normal = normal
         self.position = position
         self.mat = material
+        self.hit = False
 
     @staticmethod
     def default():
@@ -55,4 +56,5 @@ class Intersection:
         normal = glm.vec3(0, 0, 0)
         position = glm.vec3(0, 0, 0)
         mat = Material.default()
+        hit = False
         return Intersection(time, normal, position, mat)
