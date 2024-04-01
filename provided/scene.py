@@ -97,10 +97,6 @@ class Scene:
                             shadIntersection = obj.intersect(shadRay, hc.Intersection.default())
                             if shadIntersection.hit:
                                 break
-                                #shadow = True
-                                #blocked_lights.append(light)
-                                #Ld -= light.power*closest.mat.diffuse
-                        # continue regular shading
                         if not shadIntersection.hit:
                             l = -glm.normalize(closest.position - light.vector)
                             Ld += light.power * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
@@ -108,9 +104,6 @@ class Scene:
                             Ls += light.power * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
                     
                     colour = La + Ld + Ls
-                    """if shadow:
-                        for light in blocked_lights:
-                            colour = (1 - light.power)*colour"""
 
                 image[i, j, 0] = max(0.0, min(1.0, colour.x))
                 image[i, j, 1] = max(0.0, min(1.0, colour.y))
