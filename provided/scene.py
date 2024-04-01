@@ -58,11 +58,6 @@ class Scene:
         u = glm.normalize(u)
         v = glm.cross(w, u)
 
-        #print("num rays: " + str(self.samples))
-        #print("num lights: " + str(len(self.lights)))
-        #print("num objects: " + str(len(self.objects)))
-        
-        #ray = hc.Ray(glm.vec3(self.position), w)
         max_i = 0
         max_j = 0
         max_z = 0
@@ -74,27 +69,48 @@ class Scene:
                 # perspective
                 x = left + (right - left) * (i + 0.5) / self.width
                 y = bottom + (top - bottom) * (j + 0.5) / self.height
-                ray_dir = -w*d + x * u + y * v
+                ray_dir = glm.normalize(-w*d + x * u + y * v)
                 ray = hc.Ray(self.position, ray_dir)
+                
+                distance = float('inf')
+                closest = hc.Intersection.default()
 
                 # TODO: Test for intersection
                 for obj in self.objects:
                     intersection = obj.intersect(ray, hc.Intersection.default())
-                    # deal w/ intersection
-                    # GET THE SHADING, USE intersection.mat:
-                    # has diffuse and specular lighting components
-                    # and has the shininess --> called hardness
-                    colour = glm.vec3(0, 0, 0)
-                    if (intersection.hit):
-                        La = self.ambient
-                        Ld = glm.vec3(0, 0, 0)
-                        Ls = glm.vec3(0, 0, 0)
-                        for light in self.lights:
-                            Ld += 0.13 * intersection.mat.diffuse * max(0, glm.dot(intersection.normal, light.vector))
-                            h = (cam_dir + light.vector)/np.linalg.norm(cam_dir + light.vector)
-                            Ls += light.power * intersection.mat.specular * max(0, glm.dot(intersection.normal, h)) ** intersection.mat.hardness
-                        colour = La + Ld + Ls
-                # TODO: Perform shading computations on the intersection point
+                    new_distance = ray.getDistance(intersection.position)
+                    if (new_distance < distance and intersection.hit):
+                        distance = new_distance
+                        closest = intersection
+                # TODO: Perform shading computations on the intersection point    
+                colour = glm.vec3(0, 0, 0)
+                if (closest.hit):
+                    La = self.ambient
+                    Ld = glm.vec3(0, 0, 0)
+                    Ls = glm.vec3(0, 0, 0)
+                    #blocked_lights = []
+                    #shadow = False
+                    for light in self.lights:
+                        # compute shadow shading
+                        shadRay = hc.Ray(closest.position, light.vector - closest.position)
+                        for obj in self.objects:
+                            shadIntersection = obj.intersect(shadRay, hc.Intersection.default())
+                            if shadIntersection.hit:
+                                break
+                                #shadow = True
+                                #blocked_lights.append(light)
+                                #Ld -= light.power*closest.mat.diffuse
+                        # continue regular shading
+                        if not shadIntersection.hit:
+                            l = -glm.normalize(closest.position - light.vector)
+                            Ld += light.power * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
+                            h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
+                            Ls += light.power * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
+                    
+                    colour = La + Ld + Ls
+                    """if shadow:
+                        for light in blocked_lights:
+                            colour = (1 - light.power)*colour"""
 
                 image[i, j, 0] = max(0.0, min(1.0, colour.x))
                 image[i, j, 1] = max(0.0, min(1.0, colour.y))

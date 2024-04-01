@@ -15,6 +15,7 @@ class Geometry:
         self.name = name
         self.gtype = gtype
         self.materials = materials
+        self.epsilon = 0.005
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         return intersect
@@ -27,25 +28,27 @@ class Sphere(Geometry):
         self.radius = radius
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        d = ray.direction/np.linalg.norm(ray.direction)
-        o = ray.origin
-        t = glm.dot(self.center - o, d)
-        p = ray.getPoint(t)
-        y = glm.length(self.center - p)
-        if (y < self.radius):
-            #print("HERE")
-            x = math.sqrt(self.radius**2 - y**2)
-            t1 = t - x
-            t2 = t + x
-            if (ray.getDistance(ray.getPoint(t1)) < ray.getDistance(ray.getPoint(t2))):
-                t = t1
-            else:
-                t = t2
+        #epsilon = 0.005
+        d = ray.direction
+        e = ray.origin
+        discriminant = glm.dot(d, e - self.center)**2 - glm.dot(d, d)*(glm.dot(e - self.center, e - self.center) - self.radius**2)
+        if (discriminant < 0):
+            return intersect
+        t1 = (glm.dot(-d, e - self.center) + math.sqrt(discriminant))/glm.dot(d, d)
+        t2 = (glm.dot(-d, e - self.center) - math.sqrt(discriminant))/glm.dot(d, d)
+        if (ray.getDistance(ray.getPoint(t1)) < ray.getDistance(ray.getPoint(t2))):
+            t = t1
+        else:
+            t = t2
+        point = ray.getPoint(t)
+        on_sphere = glm.dot(d, d)*(t**2) + glm.dot(2*d, e - self.center)*t + glm.dot(e - self.center, e - self.center) - self.radius**2
+        if (abs(on_sphere) < self.epsilon):
             intersect.time = t
-            intersect.position = ray.getPoint(t)
-            intersect.normal = (intersect.position - self.center)/np.linalg.norm(intersect.position - self.center)
+            intersect.position = point
+            intersect.normal = (point - self.center)/self.radius
             intersect.mat = self.materials[0]
-            intersect.hit = True
+            if t > 0 + self.epsilon:
+                intersect.hit = True
         return intersect
 
 
@@ -57,30 +60,28 @@ class Plane(Geometry):
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         # TODO: Create intersect code for Plane
-        epsilon = 0.01
-        p = ray.origin
+        #epsilon = 0.01
+        e = ray.origin
         d = ray.direction
-        n = self.normal/np.linalg.norm(self.normal)
-        a = self.point
-        # checks for near-parallelism
-        #if (abs(glm.dot(d, n)) < epsilon):
-            #return intersect
-        t = abs(glm.dot(a - p, n)/glm.dot(d, n))
-        x = ray.getPoint(t)
-        on_plane = glm.dot(x - a, n)
+        n = self.normal
+        p1 = self.point
+        t = abs(glm.dot(p1 - e, n)/glm.dot(d, n))
+        p = ray.getPoint(t)
+        on_plane = glm.dot(p - p1, n)
         # checks if on plane with epsilon margin of error
-        if (abs(on_plane) <= epsilon):
+        if (abs(on_plane) <= self.epsilon):
             intersect.time = t
-            intersect.position = x
+            intersect.position = p
             intersect.normal = n
             # deal with material
-            x = math.ceil(intersect.position.x)
-            z = math.ceil(intersect.position.z)
+            x = math.ceil(p.x)
+            z = math.ceil(p.z)
             if (x + z) % 2 == 0:
                 intersect.mat = self.materials[0]
             else:
                 intersect.mat = self.materials[1]
-            intersect.hit = True
+            if t > 0 + self.epsilon:
+                intersect.hit = True
         return intersect
 
 
