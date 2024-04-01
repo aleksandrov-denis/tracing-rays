@@ -93,10 +93,45 @@ class AABB(Geometry):
         self.minpos = center - halfside
         self.maxpos = center + halfside
 
-    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        pass
-        # TODO: Create intersect code for Cube
+    def getLowHigh(self, _min_, _max_, p, d):
+        if d == 0:
+            return 0.0, 0.0
+        tvarmin = (_min_ - p)/d
+        tvarmax = (_max_ - p)/d
+        return min(tvarmin, tvarmax), max(tvarmin, tvarmax)
 
+    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        # TODO: Create intersect code for Cube
+        txlow, txhigh = self.getLowHigh(self.minpos.x, self.maxpos.x, ray.origin.x, ray.direction.x)
+        tylow, tyhigh = self.getLowHigh(self.minpos.y, self.maxpos.y, ray.origin.y, ray.direction.y)
+        tzlow, tzhigh = self.getLowHigh(self.minpos.z, self.maxpos.z, ray.origin.z, ray.direction.z)
+        tmin = max(txlow, tylow, tzlow)
+        tmax = min(txhigh, tyhigh, tzhigh)
+        if abs(tmin) < 0 + self.epsilon or abs(tmax) < 0 + self.epsilon:
+            return intersect
+        if tmax > tmin + self.epsilon:
+            intersect.time = tmin
+            p = ray.getPoint(tmin)
+            intersect.position = p
+            nx = glm.vec3(1, 0, 0)
+            ny = glm.vec3(0, 1, 0)
+            nz = glm.vec3(0, 0, 1)
+            if abs(p.x - self.maxpos.x) < self.epsilon:
+                n = nx
+            elif abs(p.x - self.minpos.x) < self.epsilon:
+                n = -nx
+            elif abs(p.y - self.maxpos.y) < self.epsilon:
+                n = ny
+            elif abs(p.y - self.minpos.y) < self.epsilon:
+                n = -ny
+            elif abs(p.z - self.maxpos.z) < self.epsilon:
+                n = nz
+            elif abs(p.z - self.minpos.z) < self.epsilon:
+                n = -nz
+            intersect.normal = n
+            intersect.mat = self.materials[0]
+            intersect.hit = True
+        return intersect
 
 class Mesh(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], translate: glm.vec3, scale: float,

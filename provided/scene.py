@@ -99,7 +99,7 @@ class Scene:
                                 break
                         if not shadIntersection.hit:
                             l = -glm.normalize(closest.position - light.vector)
-                            Ld += light.power * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
+                            Ld += light.power * light.colour * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
                             h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
                             Ls += light.power * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
                     
