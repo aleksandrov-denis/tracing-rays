@@ -169,75 +169,43 @@ class Hierarchy(Geometry):
         self.Minv = glm.inverse(self.M)
         self.t = t
 
-    def flatten(self):
+    def flatten(self, past_M, past_Minv):
         children = []
-        new_M = self.M
-        new_Minv = self.Minv
+        nodes = []
+        self.M = past_M @ self.M
+        self.Minv = past_Minv @ self.Minv
         for geometry in self.children:
-            if geometry.gtype != "node":
-                children.append(geometry)
+            if geometry.gtype == "node":
+                nodes = geometry.flatten(self.M, self.Minv)
             else:
-                next_children, next_M, next_Minv = geometry.flatten()
-                for child in next_children:
-                    new_M = next_M @ self.M
-                    new_Minv = next_Minv @ self.Minv
-                    children.append(child)
-        """self.children = children
-        self.M = new_M
-        self.Minv = new_Minv"""
-        return children, new_M, new_Minv
+                children.append(geometry)
+        self.children = children
+        nodes.append(self)
+
+        return nodes
 
     def intersect(self, ray: hc.Ray, closest: hc.Intersection):
-        # flatten the tree
-        self.children, self.M, self.Minv = self.flatten()
-        local_ray = hc.Ray(self.Minv @ ray.origin, self.Minv @ ray.direction)
+        #print(self.name + " has " + str(len(self.children)) + " children")
+        #local_ray = hc.Ray(self.Minv @ ray.origin, self.Minv @ ray.direction)
         distance = float('inf')
-        for child in self.children:
-            if child.gtype != "node":
-                # do intersection
-                local_intersect = child.intersect(local_ray, hc.Intersection.default())
-                # and keep track of closest intersection
-                if local_intersect.hit:
-                    new_distance = ray.getDistance(local_intersect.position)
-                    # transform the normal and position
-                    local_intersect.normal = glm.transpose(self.Minv) @ local_intersect.normal
-                    local_intersect.position = self.M @ local_intersect.position
-                    if new_distance < distance:
-                        distance = new_distance
-                        closest = local_intersect
-            else:
-                print("SHOULD NOT BE ANY NODES")
-        return closest
-
-    """def intersect(self, ray: hc.Ray, closest: hc.Intersection):
-        # generate new ray
-        local_ray = hc.Ray(self.Minv @ ray.origin, self.Minv @ ray.direction)
-        distance = float('inf')
-        for geometry in self.children:
-            if geometry.gtype != "node":
-                # do ray transformation on non-node obj
-                local_intersect = geometry.intersect(local_ray, hc.Intersection.default())
-                # and keep track of closest intersection
-                new_distance1 = ray.getDistance(local_intersect.position)
-                if local_intersect.hit:
-                    # transform the normal and position
-                    local_intersect.normal = glm.transpose(self.Minv) @ local_intersect.normal
-                    local_intersect.position = self.M @ local_intersect.position
-                    if new_distance1 < distance:
-                        distance = new_distance1
-                        closest = local_intersect
-            else:
-                child_intersect = geometry.intersect(local_ray, hc.Intersection.default())
-                if child_intersect.hit:
-                    # if intersection point is closer than existing, use it
-                    child_intersect.normal = glm.transpose(self.Minv) @ child_intersect.normal
-                    child_intersect.position = self.M @ child_intersect.position
-                    new_distance2 = ray.getDistance(child_intersect.position)
-                    if new_distance2 < distance:
-                        distance = new_distance2
-                        closest = child_intersect
-                        break
-        # account for material
+        for node in self.children:
+            for child in node.children:
+                if child.gtype != "node":
+                    #local_ray = hc.Ray(node.M @ ray.origin, node.M @ ray.direction)
+                    local_ray = ray
+                    # do intersection
+                    local_intersect = child.intersect(local_ray, hc.Intersection.default())
+                    # and keep track of closest intersection
+                    if local_intersect.hit:
+                        # transform the normal and position
+                        #local_intersect.normal = glm.transpose(node.Minv) @ local_intersect.normal
+                        #local_intersect.position = node.Minv @ local_intersect.position
+                        new_distance = local_ray.getDistance(local_intersect.position)
+                        if new_distance < distance:
+                            #local_intersect.normal = glm.transpose(node.M) @ local_intersect.normal
+                            #local_intersect.position = node.M @ local_intersect.position
+                            distance = new_distance
+                            closest = local_intersect
         if closest.hit and closest.mat is None:
             closest.mat = self.materials[0]
-        return closest"""
+        return closest
