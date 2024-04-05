@@ -78,9 +78,9 @@ class Scene:
                 # TODO: Test for intersection
                 for obj in self.objects:
                     intersection = obj.intersect(ray, hc.Intersection.default())
-                    new_distance = ray.getDistance(intersection.position)
-                    if (new_distance < distance and intersection.hit):
-                        distance = new_distance
+                    #new_distance = ray.getDistance(intersection.position)
+                    if (intersection.time < distance and intersection.hit):
+                        distance = intersection.time
                         closest = intersection
                 # TODO: Perform shading computations on the intersection point    
                 colour = glm.vec3(0, 0, 0)

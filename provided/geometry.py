@@ -143,8 +143,27 @@ class Mesh(Geometry):
             self.norms.append(glm.vec3(n[0], n[1], n[2]))
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        pass
         # TODO: Create intersect code for Mesh
+        for face in self.faces:
+            # do triangle intersection
+            A = glm.vec3(self.verts[face[0]])
+            B = glm.vec3(self.verts[face[1]])
+            C = glm.vec3(self.verts[face[2]])
+            triangle_p = (A + B + C)/3.0
+            normal = glm.normalize(glm.cross(A - C, B - C))
+            t = glm.dot(triangle_p - ray.origin, normal)/glm.dot(ray.direction, normal)
+            ray_point = ray.getPoint(t)
+            edge0 = glm.dot(glm.cross(B - A, ray_point - A), normal)
+            edge1 = glm.dot(glm.cross(C - B, ray_point - B), normal)
+            edge2 = glm.dot(glm.cross(A - C, ray_point - C), normal)
+            if edge0 > 0 and edge1 > 0 and edge2 > 0 and t > epsilon and t < intersect.time:
+                intersect.time = t
+                intersect.position = ray_point
+                intersect.normal = normal
+                intersect.mat = self.materials[0]
+                intersect.hit = True
+        return intersect
+
 
 
 class Hierarchy(Geometry):
@@ -167,7 +186,7 @@ class Hierarchy(Geometry):
         self.t = t
 
     def intersect(self, ray: hc.Ray, past_intersect: hc.Intersection):
-        local_ray = hc.Ray(glm.vec3(self.Minv * glm.vec4(ray.origin, 1.0)), glm.vec3(self.Minv * glm.vec4(ray.direction, 1.0)))
+        local_ray = hc.Ray(glm.vec3(self.Minv * glm.vec4(ray.origin, 1.0)), glm.vec3(self.Minv * glm.vec4(ray.direction, 0.0)))
         #distance = float('inf')
         closest = hc.Intersection.default()
         local_intersect = hc.Intersection.default()
@@ -176,7 +195,7 @@ class Hierarchy(Geometry):
                 local_intersect = child.intersect(local_ray, hc.Intersection.default())
                 if local_intersect.hit:
                     if local_intersect.time < past_intersect.time:
-                        local_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(local_intersect.normal, 1.0))
+                        local_intersect.normal = glm.normalize(glm.vec3(glm.transpose(self.Minv) * glm.vec4(local_intersect.normal, 0.0)))
                         local_intersect.position = glm.vec3(self.M * glm.vec4(local_intersect.position, 1.0))
                         distance = local_intersect.time
                         closest = local_intersect
@@ -188,10 +207,8 @@ class Hierarchy(Geometry):
                 else:
                     next_intersect = child.intersect(local_ray, hc.Intersection.default())
                 if next_intersect.hit:
-                    #next_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(next_intersect.normal, 1.0))
-                    #next_intersect.position = glm.vec3(self.M * glm.vec4(next_intersect.position, 1.0))
                     if next_intersect.time < past_intersect.time:
-                        next_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(next_intersect.normal, 1.0))
+                        next_intersect.normal = glm.normalize(glm.vec3(glm.transpose(self.Minv) * glm.vec4(next_intersect.normal, 0.0)))
                         next_intersect.position = glm.vec3(self.M * glm.vec4(next_intersect.position, 1.0))
                         distance = next_intersect.time
                         closest = next_intersect

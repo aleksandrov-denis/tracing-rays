@@ -48,14 +48,14 @@
             "rotation": [0.0, 0.0, 0.0],
             "size": [2.0, 10.0, 2.0],
             "position": [0.0, 0.0, 0.0],
-            "materials": [0]
+            "materials": [3]
         }
 
     ],
     "lights": [
         {
             "name": "light2", "type": "point",
-            "position": [5.0, 10.0, 5.0], "colour": [1.0, 1.0, 1.0],
+            "position": [3.0, 10.0, 5.0], "colour": [1.0, 1.0, 1.0],
             "power": 0.9
         }
     ]
