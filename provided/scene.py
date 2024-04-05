@@ -58,25 +58,6 @@ class Scene:
         u = glm.normalize(u)
         v = glm.cross(w, u)
 
-
-        for obj in self.objects:
-            if obj.gtype == "node":
-                nodes = obj.children[0].flatten(obj.M, obj.Minv)
-                nodes.reverse()
-                obj.children = nodes
-                print(obj.name + " has num children: " + str(len(obj.children)))
-                for node in obj.children:
-                    #if child.gtype == "node":
-                        #print("M is:\n" + str(child.M))
-                    for child in node.children:
-                        if child.gtype == "node":
-                            print("HOLLER")
-                        else:
-                            print("child name: " + child.name + " child type: " + child.gtype)
-                            if child.gtype == "box":
-                                child.minpos = node.M @ child.minpos
-                                child.maxpos = node.M @ child.maxpos
-
         max_i = 0
         max_j = 0
         max_z = 0
@@ -120,7 +101,7 @@ class Scene:
                             l = -glm.normalize(closest.position - light.vector)
                             Ld += light.power * light.colour * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
                             h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
-                            Ls += light.power * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
+                            Ls += light.power * light.colour * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
                     
                     colour = La + Ld + Ls
 

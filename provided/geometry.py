@@ -7,7 +7,7 @@ import numpy as np
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
 
-epsilon = 10 ** (-4)
+epsilon = 10 ** (-5)
 
 
 class Geometry:
@@ -15,7 +15,6 @@ class Geometry:
         self.name = name
         self.gtype = gtype
         self.materials = materials
-        self.epsilon = 0.005
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         return intersect
@@ -28,7 +27,6 @@ class Sphere(Geometry):
         self.radius = radius
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
-        #epsilon = 0.005
         d = ray.direction
         e = ray.origin
         discriminant = glm.dot(d, e - self.center)**2 - glm.dot(d, d)*(glm.dot(e - self.center, e - self.center) - self.radius**2)
@@ -42,12 +40,12 @@ class Sphere(Geometry):
             t = t2
         point = ray.getPoint(t)
         on_sphere = glm.dot(d, d)*(t**2) + glm.dot(2*d, e - self.center)*t + glm.dot(e - self.center, e - self.center) - self.radius**2
-        if (abs(on_sphere) < self.epsilon):
+        if (abs(on_sphere) < epsilon):
             intersect.time = t
             intersect.position = point
             intersect.normal = (point - self.center)/self.radius
             intersect.mat = self.materials[0]
-            if t > 0 + self.epsilon:
+            if t > 0 + epsilon:
                 intersect.hit = True
         return intersect
 
@@ -60,7 +58,6 @@ class Plane(Geometry):
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         # TODO: Create intersect code for Plane
-        #epsilon = 0.01
         e = ray.origin
         d = ray.direction
         n = self.normal
@@ -69,7 +66,7 @@ class Plane(Geometry):
         p = ray.getPoint(t)
         on_plane = glm.dot(p - p1, n)
         # checks if on plane with epsilon margin of error
-        if (abs(on_plane) <= self.epsilon):
+        if (abs(on_plane) <= epsilon):
             intersect.time = t
             intersect.position = p
             intersect.normal = n
@@ -80,7 +77,7 @@ class Plane(Geometry):
                 intersect.mat = self.materials[0]
             else:
                 intersect.mat = self.materials[1]
-            if t > 0 + self.epsilon:
+            if t > 0 + epsilon:
                 intersect.hit = True
         return intersect
 
@@ -107,26 +104,26 @@ class AABB(Geometry):
         tzlow, tzhigh = self.getLowHigh(self.minpos.z, self.maxpos.z, ray.origin.z, ray.direction.z)
         tmin = max(txlow, tylow, tzlow)
         tmax = min(txhigh, tyhigh, tzhigh)
-        if abs(tmin) < 0 + self.epsilon or abs(tmax) < 0 + self.epsilon:
+        if tmin < 0 + epsilon:
             return intersect
-        if tmax > tmin + self.epsilon:
+        if tmax > tmin:
             intersect.time = tmin
             p = ray.getPoint(tmin)
             intersect.position = p
             nx = glm.vec3(1, 0, 0)
             ny = glm.vec3(0, 1, 0)
             nz = glm.vec3(0, 0, 1)
-            if abs(p.x - self.maxpos.x) < self.epsilon:
+            if abs(p.x - self.maxpos.x) < epsilon:
                 n = nx
-            elif abs(p.x - self.minpos.x) < self.epsilon:
+            elif abs(p.x - self.minpos.x) < epsilon:
                 n = -nx
-            elif abs(p.y - self.maxpos.y) < self.epsilon:
+            elif abs(p.y - self.maxpos.y) < epsilon:
                 n = ny
-            elif abs(p.y - self.minpos.y) < self.epsilon:
+            elif abs(p.y - self.minpos.y) < epsilon:
                 n = -ny
-            elif abs(p.z - self.maxpos.z) < self.epsilon:
+            elif abs(p.z - self.maxpos.z) < epsilon:
                 n = nz
-            elif abs(p.z - self.minpos.z) < self.epsilon:
+            elif abs(p.z - self.minpos.z) < epsilon:
                 n = -nz
             intersect.normal = n
             intersect.mat = self.materials[0]
@@ -169,43 +166,37 @@ class Hierarchy(Geometry):
         self.Minv = glm.inverse(self.M)
         self.t = t
 
-    def flatten(self, past_M, past_Minv):
-        children = []
-        nodes = []
-        self.M = past_M @ self.M
-        self.Minv = past_Minv @ self.Minv
-        for geometry in self.children:
-            if geometry.gtype == "node":
-                nodes = geometry.flatten(self.M, self.Minv)
+    def intersect(self, ray: hc.Ray, past_intersect: hc.Intersection):
+        local_ray = hc.Ray(glm.vec3(self.Minv * glm.vec4(ray.origin, 1.0)), glm.vec3(self.Minv * glm.vec4(ray.direction, 1.0)))
+        #distance = float('inf')
+        closest = hc.Intersection.default()
+        local_intersect = hc.Intersection.default()
+        for child in self.children:
+            if child.gtype != "node":
+                local_intersect = child.intersect(local_ray, hc.Intersection.default())
+                if local_intersect.hit:
+                    if local_intersect.time < past_intersect.time:
+                        local_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(local_intersect.normal, 1.0))
+                        local_intersect.position = glm.vec3(self.M * glm.vec4(local_intersect.position, 1.0))
+                        distance = local_intersect.time
+                        closest = local_intersect
+                    else:
+                        closest = past_intersect
             else:
-                children.append(geometry)
-        self.children = children
-        nodes.append(self)
-
-        return nodes
-
-    def intersect(self, ray: hc.Ray, closest: hc.Intersection):
-        #print(self.name + " has " + str(len(self.children)) + " children")
-        #local_ray = hc.Ray(self.Minv @ ray.origin, self.Minv @ ray.direction)
-        distance = float('inf')
-        for node in self.children:
-            for child in node.children:
-                if child.gtype != "node":
-                    #local_ray = hc.Ray(node.M @ ray.origin, node.M @ ray.direction)
-                    local_ray = ray
-                    # do intersection
-                    local_intersect = child.intersect(local_ray, hc.Intersection.default())
-                    # and keep track of closest intersection
-                    if local_intersect.hit:
-                        # transform the normal and position
-                        #local_intersect.normal = glm.transpose(node.Minv) @ local_intersect.normal
-                        #local_intersect.position = node.Minv @ local_intersect.position
-                        new_distance = local_ray.getDistance(local_intersect.position)
-                        if new_distance < distance:
-                            #local_intersect.normal = glm.transpose(node.M) @ local_intersect.normal
-                            #local_intersect.position = node.M @ local_intersect.position
-                            distance = new_distance
-                            closest = local_intersect
-        if closest.hit and closest.mat is None:
+                if local_intersect.hit:
+                    next_intersect = child.intersect(local_ray, closest)
+                else:
+                    next_intersect = child.intersect(local_ray, hc.Intersection.default())
+                if next_intersect.hit:
+                    #next_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(next_intersect.normal, 1.0))
+                    #next_intersect.position = glm.vec3(self.M * glm.vec4(next_intersect.position, 1.0))
+                    if next_intersect.time < past_intersect.time:
+                        next_intersect.normal = glm.vec3(glm.transpose(self.Minv) * glm.vec4(next_intersect.normal, 1.0))
+                        next_intersect.position = glm.vec3(self.M * glm.vec4(next_intersect.position, 1.0))
+                        distance = next_intersect.time
+                        closest = next_intersect
+                    else:
+                        closest = past_intersect
+        if closest.hit and closest.mat == None:
             closest.mat = self.materials[0]
         return closest
