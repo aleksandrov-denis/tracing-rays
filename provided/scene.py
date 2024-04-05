@@ -5,6 +5,7 @@ import numpy as np
 
 import geometry as geom
 import helperclasses as hc
+import random
 
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
@@ -77,7 +78,32 @@ class Scene:
 
                 # TODO: Test for intersection
                 for obj in self.objects:
+                    bound = 10**-4
+                    samples = []
                     intersection = obj.intersect(ray, hc.Intersection.default())
+                    for cast in range(self.samples):
+                        off0 = random.uniform(-bound, bound)
+                        off1 = random.uniform(-bound, bound)
+                        sample_ray = hc.Ray(ray.origin + off0, ray.direction)
+                        sample_intersection = obj.intersect(sample_ray, hc.Intersection.default())
+                        samples.append(sample_intersection)
+                    #pos = glm.vec3(0.0)
+                    #norm = glm.vec3(0.0)
+                    #time = 0
+                    color = glm.vec3(0.0)
+                    for sample in samples:
+                        #pos += sample.position
+                        #norm += sample.normal
+                        #time += sample.time
+                        color += sample.mat.diffuse
+                    #pos = pos/self.samples
+                    #norm = glm.normalize(norm/self.samples)
+                    #time = time/self.samples
+                    color = color/(self.samples)
+                    #intersection.position = pos
+                    #intersection.normal = norm
+                    #intersection.time = time
+                    intersection.mat.diffuse = color
                     #new_distance = ray.getDistance(intersection.position)
                     if (intersection.time < distance and intersection.hit):
                         distance = intersection.time
