@@ -19,6 +19,13 @@ class Geometry:
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         return intersect
 
+class EH(Geometry):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], pos: glm.vec3):
+        super().__init__(name, gtype, materials)
+        self.pos = pos
+    def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        pass
+        return intersection
 
 class Sphere(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: float):

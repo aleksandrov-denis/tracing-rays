@@ -73,65 +73,41 @@ class Scene:
                 ray_dir = glm.normalize(-w*d + x * u + y * v)
                 ray = hc.Ray(self.position, ray_dir)
                 
-                distance = float('inf')
                 closest = hc.Intersection.default()
-
-                # TODO: Test for intersection
-                for obj in self.objects:
-                    bound = 10**-4
-                    samples = []
-                    intersection = obj.intersect(ray, hc.Intersection.default())
-                    for cast in range(self.samples):
-                        off0 = random.uniform(-bound, bound)
-                        off1 = random.uniform(-bound, bound)
-                        sample_ray = hc.Ray(ray.origin + off0, ray.direction)
-                        sample_intersection = obj.intersect(sample_ray, hc.Intersection.default())
-                        samples.append(sample_intersection)
-                    #pos = glm.vec3(0.0)
-                    #norm = glm.vec3(0.0)
-                    #time = 0
-                    color = glm.vec3(0.0)
-                    for sample in samples:
-                        #pos += sample.position
-                        #norm += sample.normal
-                        #time += sample.time
-                        color += sample.mat.diffuse
-                    #pos = pos/self.samples
-                    #norm = glm.normalize(norm/self.samples)
-                    #time = time/self.samples
-                    color = color/(self.samples)
-                    #intersection.position = pos
-                    #intersection.normal = norm
-                    #intersection.time = time
-                    intersection.mat.diffuse = color
-                    #new_distance = ray.getDistance(intersection.position)
-                    if (intersection.time < distance and intersection.hit):
-                        distance = intersection.time
-                        closest = intersection
-                # TODO: Perform shading computations on the intersection point    
-                colour = glm.vec3(0, 0, 0)
-                if (closest.hit):
-                    La = self.ambient
-                    Ld = glm.vec3(0, 0, 0)
-                    Ls = glm.vec3(0, 0, 0)
-                    #blocked_lights = []
-                    #shadow = False
-                    for light in self.lights:
-                        # compute shadow shading
-                        shadRay = hc.Ray(closest.position, light.vector - closest.position)
-                        for obj in self.objects:
-                            shadIntersection = obj.intersect(shadRay, hc.Intersection.default())
-                            if shadIntersection.hit:
-                                break
-                        if not shadIntersection.hit:
-                            l = -glm.normalize(closest.position - light.vector)
-                            Ld += light.power * light.colour * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
-                            h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
-                            Ls += light.power * light.colour * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
+                for cast in range(self.samples):
+                    distance = float('inf')
+                    # TODO: Test for intersection
+                    for obj in self.objects:
+                        bound = 10**-2
+                        #color = glm.vec3(0.0)
+                        off = random.uniform(-bound, bound)
+                        sample_ray = hc.Ray(ray.origin + off, ray.direction)
+                        intersection = obj.intersect(sample_ray, hc.Intersection.default())
+                        if (intersection.time < distance and intersection.hit):
+                            distance = intersection.time
+                            closest = intersection
+                    colour = glm.vec3(0, 0, 0)
+                    # TODO: Perform shading computations on the intersection point
+                    if (closest.hit):
+                        La = self.ambient
+                        Ld = glm.vec3(0, 0, 0)
+                        Ls = glm.vec3(0, 0, 0)
+                        for light in self.lights:
+                            # compute shadow shading
+                            shadRay = hc.Ray(closest.position, light.vector - closest.position)
+                            for obj in self.objects:
+                                shadIntersection = obj.intersect(shadRay, hc.Intersection.default())
+                                if shadIntersection.hit:
+                                    break
+                            if not shadIntersection.hit:
+                                l = -glm.normalize(closest.position - light.vector)
+                                Ld += light.power * light.colour * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
+                                h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
+                                Ls += light.power * light.colour * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
                     
-                    colour = La + Ld + Ls
-
-                image[i, j, 0] = max(0.0, min(1.0, colour.x))
-                image[i, j, 1] = max(0.0, min(1.0, colour.y))
-                image[i, j, 2] = max(0.0, min(1.0, colour.z))
+                        colour += La + Ld + Ls
+                    colour = colour/self.samples
+                    image[i, j, 0] = max(0.0, min(1.0, colour.x))
+                    image[i, j, 1] = max(0.0, min(1.0, colour.y))
+                    image[i, j, 2] = max(0.0, min(1.0, colour.z))
         return image
