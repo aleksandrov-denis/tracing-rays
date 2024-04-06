@@ -74,21 +74,23 @@ class Scene:
                 ray = hc.Ray(self.position, ray_dir)
                 
                 closest = hc.Intersection.default()
+                colour = glm.vec3(0, 0, 0)
                 for cast in range(self.samples):
                     distance = float('inf')
                     # TODO: Test for intersection
                     for obj in self.objects:
-                        bound = 10**-2
+                        bound = 1.0
                         #color = glm.vec3(0.0)
-                        off = random.uniform(-bound, bound)
+                        off = 0.0
+                        if self.jitter:
+                            off = (random.uniform(-bound, bound) - 0.5)/300
                         sample_ray = hc.Ray(ray.origin + off, ray.direction)
                         intersection = obj.intersect(sample_ray, hc.Intersection.default())
-                        if (intersection.time < distance and intersection.hit):
+                        if intersection.time < distance and intersection.hit:
                             distance = intersection.time
                             closest = intersection
-                    colour = glm.vec3(0, 0, 0)
                     # TODO: Perform shading computations on the intersection point
-                    if (closest.hit):
+                    if closest.hit:
                         La = self.ambient
                         Ld = glm.vec3(0, 0, 0)
                         Ls = glm.vec3(0, 0, 0)
@@ -104,10 +106,9 @@ class Scene:
                                 Ld += light.power * light.colour * closest.mat.diffuse * max(0, glm.dot(closest.normal, l))
                                 h = (-ray.direction + l)/np.linalg.norm(-ray.direction + l)
                                 Ls += light.power * light.colour * closest.mat.specular * max(0, glm.dot(closest.normal, h))**closest.mat.hardness
-                    
-                        colour += La + Ld + Ls
-                    colour = colour/self.samples
-                    image[i, j, 0] = max(0.0, min(1.0, colour.x))
-                    image[i, j, 1] = max(0.0, min(1.0, colour.y))
-                    image[i, j, 2] = max(0.0, min(1.0, colour.z))
+                        colour = colour + La + Ld + Ls
+                colour = colour/self.samples
+                image[i, j, 0] = max(0.0, min(1.0, colour.x))
+                image[i, j, 1] = max(0.0, min(1.0, colour.y))
+                image[i, j, 2] = max(0.0, min(1.0, colour.z))
         return image
