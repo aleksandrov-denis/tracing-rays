@@ -1,6 +1,6 @@
 {
     "resolution": [1024, 768],
-    "AA": { "jitter": false, "samples": 1 },
+    "AA": { "jitter": true, "samples": 3 },
     "ambient": [0.2, 0.2, 0.2],
     "camera": {
         "position": [0.0, 2.0, 10.0],

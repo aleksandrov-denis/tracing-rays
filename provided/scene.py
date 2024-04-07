@@ -82,9 +82,12 @@ class Scene:
                         bound = 1.0
                         #color = glm.vec3(0.0)
                         off = 0.0
+                        jitter = 1.0
                         if self.jitter:
-                            off = (random.uniform(-bound, bound) - 0.5)/300
-                        sample_ray = hc.Ray(ray.origin + off, ray.direction)
+                            jitter = random.randint(90, 100)
+                        if self.samples > 1:
+                            off = (0.5 - random.uniform(-bound, bound))/jitter
+                        sample_ray = hc.Ray(ray.origin, ray.direction + off)
                         intersection = obj.intersect(sample_ray, hc.Intersection.default())
                         if intersection.time < distance and intersection.hit:
                             distance = intersection.time
