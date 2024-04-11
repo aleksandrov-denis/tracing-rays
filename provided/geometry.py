@@ -3,6 +3,7 @@ import helperclasses as hc
 import glm
 import igl
 import numpy as np
+import random
 
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
@@ -19,10 +20,11 @@ class Geometry:
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         return intersect
 
-class EH(Geometry):
-    def __init__(self, name: str, gtype: str, materials: list[hc.Material], pos: glm.vec3):
+class Quadric(Geometry):
+    def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, radius: glm.vec3):
         super().__init__(name, gtype, materials)
-        self.pos = pos
+        self.center = center
+        self.radius = radius
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
         pass
         return intersection
@@ -93,9 +95,10 @@ class AABB(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], center: glm.vec3, dimension: glm.vec3):
         # dimension holds information for length of each size of the box
         super().__init__(name, gtype, materials)
-        halfside = dimension / 2
-        self.minpos = center - halfside
-        self.maxpos = center + halfside
+        if center != None and dimension != None:
+            halfside = dimension / 2
+            self.minpos = center - halfside
+            self.maxpos = center + halfside
 
     def getLowHigh(self, _min_, _max_, p, d):
         if d == 0:
@@ -133,7 +136,11 @@ class AABB(Geometry):
             elif abs(p.z - self.minpos.z) < epsilon:
                 n = -nz
             intersect.normal = n
-            intersect.mat = self.materials[0]
+            if self.materials != None:
+                intersect.mat = self.materials[0]
+            else:
+                
+                intersect.mat = hc.Material("bbox", glm.vec3(0.0, 0.0, 0.0), glm.vec3(0.0, 0.0, 0.0), 0.0, -1)
             intersect.hit = True
         return intersect
 
@@ -141,15 +148,98 @@ class Mesh(Geometry):
     def __init__(self, name: str, gtype: str, materials: list[hc.Material], translate: glm.vec3, scale: float,
                  filepath: str):
         super().__init__(name, gtype, materials)
-        verts, _, norms, self.faces, _, _ = igl.read_obj(filepath)
         self.verts = []
         self.norms = []
-        for v in verts:
-            self.verts.append((glm.vec3(v[0], v[1], v[2]) + translate) * scale)
-        for n in norms:
-            self.norms.append(glm.vec3(n[0], n[1], n[2]))
+        self.faces = []
+        if (translate != None and scale != None and filepath != None):
+            verts, _, norms, self.faces, _, _ = igl.read_obj(filepath)
+            for v in verts:
+                self.verts.append((glm.vec3(v[0], v[1], v[2]) + translate) * scale)
+            for n in norms:
+                self.norms.append(glm.vec3(n[0], n[1], n[2]))
+        # HBV implementation
+        self.bbox = None
+        self.left = None
+        self.right = None
+        self.depth = None
+
+    def setupHBV(self, axis, depth):
+        self.depth = depth
+        if depth == 0:
+            return
+        self.left = Mesh(self.name, self.gtype, self.materials, None, None, None)
+        self.right = Mesh(self.name, self.gtype, self.materials, None, None, None)
+        self.left.name = "left"
+        self.right.name = "right"
+        midpoint = (self.bbox.minpos + self.bbox.maxpos)/2.0
+        l_index = 0
+        r_index = 0
+        inf = float('inf')
+        l_minpos = glm.vec3(inf, inf, inf)
+        l_maxpos = glm.vec3(-inf, -inf, -inf)
+        r_minpos = glm.vec3(inf, inf, inf)
+        r_maxpos = glm.vec3(-inf, -inf, -inf)
+        for face in self.faces:
+            new_l_face = []
+            new_r_face = []
+            on_left = False
+            num_left = 0
+            for i in face:
+                if self.verts[i][axis] < midpoint[axis]:
+                    num_left += 1
+            rand = random.randint(0, 1)
+            if num_left % 2 == rand:
+                on_left = True
+            for i in face:
+                if on_left:
+                    # if vert is on left side, put whole face on the left
+                    l_minpos = glm.min(l_minpos, self.verts[i])
+                    l_maxpos = glm.max(l_maxpos, self.verts[i])
+                    self.left.verts.append(self.verts[i])
+                    new_l_face.append(l_index)
+                    l_index += 1
+                else:
+                    r_minpos = glm.min(r_minpos, self.verts[i])
+                    r_maxpos = glm.max(r_maxpos, self.verts[i])
+                    self.right.verts.append(self.verts[i])
+                    new_r_face.append(r_index)
+                    r_index += 1
+            if on_left:
+                self.left.faces.append(new_l_face)
+            else:
+                self.right.faces.append(new_r_face)
+        bbox_left = AABB(None, None, None, None, None)
+        bbox_left.minpos = l_minpos
+        bbox_left.maxpos = l_maxpos
+        self.left.bbox = bbox_left
+        bbox_right = AABB(None, None, None, None, None)
+        bbox_right.minpos = r_minpos
+        bbox_right.maxpos = r_maxpos
+        self.right.bbox = bbox_right
+        # rotate to next axis
+        axis = (axis + 1) % 3
+        depth -= 1
+        # need a stop point
+        self.left.setupHBV(axis, depth)
+        self.right.setupHBV(axis, depth)
 
     def intersect(self, ray: hc.Ray, intersect: hc.Intersection):
+        if self.depth != 0:
+            bbox_intersect = self.bbox.intersect(ray, hc.Intersection.default())
+            if not bbox_intersect.hit:
+                return intersect
+            left_intersect = self.left.intersect(ray, intersect)
+            right_intersect = self.right.intersect(ray, intersect)
+            if left_intersect.hit and right_intersect.hit:
+                if left_intersect.time < right_intersect.time:
+                    return left_intersect
+                return right_intersect
+            elif left_intersect.hit:
+                return left_intersect
+            elif right_intersect.hit:
+                return right_intersect
+            else:
+                return hc.Intersection.default()
         # TODO: Create intersect code for Mesh
         for face in self.faces:
             # do triangle intersection
