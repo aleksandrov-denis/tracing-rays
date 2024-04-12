@@ -188,7 +188,7 @@ class Mesh(Geometry):
                 if self.verts[i][axis] < midpoint[axis]:
                     num_left += 1
             rand = random.randint(0, 1)
-            if num_left % 2 == rand:
+            if num_left > 0 and num_left % 2 == rand:
                 on_left = True
             for i in face:
                 if on_left:

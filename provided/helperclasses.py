@@ -17,12 +17,13 @@ class Ray:
 
 
 class Material:
-    def __init__(self, name: str, specular: glm.vec3, diffuse: glm.vec3, hardness: float, ID: int):
+    def __init__(self, name: str, specular: glm.vec3, diffuse: glm.vec3, hardness: float, ID: int, reflectivity=0):
         self.name = name
         self.specular = specular
         self.diffuse = diffuse
         self.hardness = hardness
         self.ID = ID
+        self.reflectivity = reflectivity
 
     @staticmethod
     def default():
@@ -49,6 +50,7 @@ class Intersection:
         self.position = position
         self.mat = material
         self.hit = False
+        self.depth = 0
 
     @staticmethod
     def default():

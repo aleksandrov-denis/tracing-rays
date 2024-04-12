@@ -79,7 +79,11 @@ def load_scene(infile):
         mat_hardness = material["hardness"]
         mat_name = material["name"]
         mat_id = material["ID"]
-        materials.append(hc.Material(mat_name, mat_specular, mat_diffuse, mat_hardness, mat_id))
+        try:
+            reflectivity = material["reflectivity"]
+        except:
+            reflectivity = 0.0
+        materials.append(hc.Material(mat_name, mat_specular, mat_diffuse, mat_hardness, mat_id, reflectivity))
 
     # Loading geometry
     objects = []
