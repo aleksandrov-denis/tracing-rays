@@ -3,6 +3,7 @@
 A ray tracer which uses the json format to define scenes
 
 **To Run**
+
 Running ```python provided/main.py``` will render a default scene
 of two reflective spheres on a checkerboard plane to ```provided/out.png```
 
