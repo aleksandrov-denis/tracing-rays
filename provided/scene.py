@@ -8,6 +8,7 @@ import helperclasses as hc
 import random
 from tqdm import tqdm
 
+# Integrated by Denis Aleksandrov
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
 
@@ -56,7 +57,7 @@ class Scene:
             bound = 2
             l = light.vector - closest.position
             # AREA LIGHTS
-            #lv = glm.vec3(l.x + random.uniform(-bound, bound), l.y, l.z + random.uniform(-bound, bound))
+            lv = glm.vec3(l.x + random.uniform(-bound, bound), l.y, l.z + random.uniform(-bound, bound))
             lv = l
             shadRay = hc.Ray(closest.position, lv)
             for obj in self.objects:
@@ -75,7 +76,6 @@ class Scene:
             c_ray = hc.Ray(closest.position, glm.reflect(ray.direction, closest.normal))
             reflection = hc.Intersection.default()
             # do reflection
-            #n_ray = hc.Ray(glm.reflect(c_ray.direction, closest.normal), closest.position + closest.normal)
             for obj in self.objects:
                 intersection = obj.intersect(c_ray, hc.Intersection.default())
                 # get next closest

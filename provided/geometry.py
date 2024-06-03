@@ -5,6 +5,7 @@ import igl
 import numpy as np
 import random
 
+# Integrated by Denis Aleksandrov
 # Ported from C++ by Melissa Katz
 # Adapted from code by Loïc Nassif and Paul Kry
 
