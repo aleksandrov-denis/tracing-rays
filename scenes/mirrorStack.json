@@ -1,0 +1,135 @@
+{
+    "resolution": [512, 512],
+    "AA": { "jitter": false, "samples": 1 },
+    "ambient": [0.1, 0.1, 0.1],
+    "camera": {
+        "position": [6.0, 10.0, 15.0],
+        "lookAt": [0.0, 0.0, 0.0],
+        "up": [0.0, 1.0, 0.0],
+        "fov": 45.0
+    },
+    "materials": [
+        {
+            "name": "red", "ID": 0, 
+            "diffuse": [1.0, 0.0, 0.0], "specular": [0.8, 0.8, 0.8],
+            "hardness": 32, "reflectivity": 0.5
+        },
+        {
+            "name": "green", "ID": 1, 
+            "diffuse": [0.0, 1.0, 0.0], "specular": [0.8, 0.8, 0.8],
+            "hardness": 32
+        },
+        {
+            "name": "blue", "ID": 2, 
+            "diffuse": [0.0, 0.0, 1.0], "specular": [0.8, 0.8, 0.9],
+            "hardness": 32
+        },
+        {
+            "name": "orange", "ID": 3, 
+            "diffuse": [1.0, 0.5, 0.0], "specular": [0.8, 0.8, 0.9],
+            "hardness": 32
+        },
+        {
+            "name": "yellow", "ID": 4, 
+            "diffuse": [1.0, 1.0, 0.0], "specular": [0.8, 0.8, 0.9],
+            "hardness": 32
+        }
+    ],
+    "objects": [
+        {
+            "name": "mball0", 
+            "type": "mball",
+            "position": [0.0, 0.0, 0.0],
+            "threshold": 0.3,
+            "balls": [
+              {
+                "position": [0.0, 0.0, 0.0],
+                "radius": 1
+              
+              },
+              {
+                "position": [1.0, 0.0, 0.0],
+                "radius": 1
+              },
+              {
+                "position": [0.5, 0.5, 0.0],
+                "radius": 0.8
+
+              },
+              {
+                "position": [0.5, 1.0, 0.0],
+                "radius": 0.8
+              },
+              {
+                "position": [0.5, 1.5, 0.0],
+                "radius": 0.8
+              },
+              {
+                "position": [0.5, 2.0, 0.0],
+                "radius": 0.8
+              }
+            ], "materials": [1]
+        },
+        {
+            "name": "plane", "type": "plane",
+            "normal": [0.0, 1.0, 0.0],
+            "position": [0.0, 0.0, 0.0],
+            "materials": [2, 1]
+        },
+        {
+            "name": "boxStack", "type": "node",
+            "position": [0.0, 0.0, 0.0], "rotation": [0.0, 30.0, 0.0], "scale": [1.0, 1.0, 1.0],
+            "materials": [], "ref": "",
+            "children": [
+                {
+                    "name": "box1", "type": "node",
+                    "rotation": [0.0, 0.0, 0.0], "position": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0],
+                    "materials": [], "ref": "",
+                    "children": [
+                        {
+                            "name": "box1", "type": "box",
+                            "materials": [0], 
+                            "min": [-1, 0, -1], "max": [1, 2, 1]
+                        },
+                        {
+                            "name": "box2", "type": "node",
+                            "rotation": [0.0, 12.0, 0.0], "position": [0.0, 2.0, 0.0], "scale": [0.5, 0.5, 0.5],
+                            "materials": [], "ref": "",
+                            "children": [
+                                {
+                                    "name": "box2", "type": "box",
+                                    "materials": [3], 
+                                    "min": [-1, 0, -1], "max": [1, 2, 1]
+                                },
+                                {
+                                    "name": "box3", "type": "node",
+                                    "rotation": [0.0, -15.0, 0.0], "position": [0.0, 2.0, 0.2], "scale": [0.5, 0.5, 0.5],
+                                    "materials": [], "ref": "",
+                                    "children": [
+                                        {
+                                            "name": "box3", "type": "box",
+                                            "materials": [4], 
+                                            "min": [-1, 0, -1], "max": [1, 2, 1]
+                                        }
+                                    ]
+                                }                                
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }   
+    ],
+    "lights": [
+        {
+            "name": "light1", "type": "point",
+            "position": [-5.0, 5.0, 5.0], "colour": [1.0, 1.0, 1.0],
+            "power": 0.5
+        },
+        {
+            "name": "light2", "type": "point",
+            "position": [5.0, 10.0, 5.0], "colour": [1.0, 1.0, 1.0],
+            "power": 0.9
+        }
+    ]
+}
